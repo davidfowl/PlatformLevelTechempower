@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace PlatformLevelTechempower
 {
-    public class PlainTextRawApplication : IConnectionHandler
+    public class PlainTextRawApplication : IConnectionHandler, IServerApplication
     {
         private static readonly byte[] _plainTextResposne = Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 13\r\nContent-Type: text/plain\r\n\r\nHello, World!");
 
@@ -33,6 +33,8 @@ namespace PlatformLevelTechempower
 
             var transport = libuvTransport.Create(binding, this);
             await transport.BindAsync();
+
+            Console.WriteLine($"Server (raw) listening on http://localhost:{port}");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 

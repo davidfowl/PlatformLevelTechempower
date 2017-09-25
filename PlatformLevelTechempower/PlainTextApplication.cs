@@ -15,7 +15,7 @@ using Microsoft.Net.Http.Headers;
 
 namespace PlatformLevelTechempower
 {
-    public class PlainTextApplication : IHttpApplication<IFeatureCollection>
+    public class PlainTextApplication : IHttpApplication<IFeatureCollection>, IServerApplication
     {
         private static readonly byte[] _helloWorldPayload = Encoding.UTF8.GetBytes("Hello, World!");
         private static readonly int _helloWorldLength = _helloWorldPayload.Length;
@@ -42,10 +42,11 @@ namespace PlatformLevelTechempower
 
             await server.StartAsync(this, CancellationToken.None);
 
+            Console.WriteLine($"Server listening on http://localhost:{port}");
+
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 
             await server.StopAsync(CancellationToken.None);
-
         }
 
         public IFeatureCollection CreateContext(IFeatureCollection contextFeatures)
