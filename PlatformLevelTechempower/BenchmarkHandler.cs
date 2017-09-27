@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 
 namespace PlatformLevelTechempower
 {
-    public class BenchmarkHandler : Handler
+    public class BenchmarkHandler : HttpHandler
     {
         private static readonly byte[] _plainTextBody = Encoding.UTF8.GetBytes("Hello, World!");
 
@@ -18,13 +18,12 @@ namespace PlatformLevelTechempower
         {
             if (Method == HttpMethod.Get)
             {
-                if (PathMatch(Path, Paths.Plaintext))
+                if (PathMatch(Paths.Plaintext))
                 {
                     Ok(_plainTextBody, MediaType.TextPlain);
-
                     return Task.CompletedTask;
                 }
-                else if (PathMatch(Path, Paths.Json))
+                else if (PathMatch(Paths.Json))
                 {
                     Json(new { message = "Hello, World!" });
                     return Task.CompletedTask;
