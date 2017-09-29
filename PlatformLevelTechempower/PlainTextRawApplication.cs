@@ -84,7 +84,6 @@ namespace PlatformLevelTechempower
 
             private HttpMethod _method;
             private byte[] _path;
-            private Span<byte> _pathSpan;
 
             public string ConnectionId { get; set; }
 
@@ -140,40 +139,11 @@ namespace PlatformLevelTechempower
                                 
                                 if (_method == HttpMethod.Get)
                                 {
-                                    var path = new Span<byte>(_path);
-                                    if (path.StartsWith(Paths.Plaintext))
-                                    {
-                                        Ok(outputBuffer);
-                                        WriteCommonHeaders(outputBuffer);
-
-                                        outputBuffer.Write(_headerContentTypeText);
-                                        outputBuffer.Write(_crlf);
-
-                                        outputBuffer.Write(_plainTextBody);
-                                    }
-                                    else if (path.StartsWith(Paths.Json))
-                                    {
-                                        Ok(outputBuffer);
-                                        WriteCommonHeaders(outputBuffer);
-
-                                        outputBuffer.Write(_headerContentTypeJson);
-                                        outputBuffer.Write(_crlf);
-
-                                        var jsonPayload = Encoding.UTF8.GetBytes(Jil.JSON.Serialize(new { message = "Hello, World!" }));
-                                        outputBuffer.Write(jsonPayload);
-                                    }
-                                    else
-                                    {
-                                        Ok(outputBuffer);
-                                        WriteCommonHeaders(outputBuffer);
-
-
-                                    }
+                                    HandleRequest(ref outputBuffer);
                                 }
                                 else
                                 {
-                                    Ok(outputBuffer);
-                                    WriteCommonHeaders(outputBuffer);
+                                    Default(ref outputBuffer);
                                 }
 
                                 await outputBuffer.FlushAsync();
@@ -199,22 +169,94 @@ namespace PlatformLevelTechempower
                 }
             }
 
-            private static void Ok(WritableBuffer outputBuffer)
+            private void HandleRequest(ref WritableBuffer outputBuffer)
             {
-                // HTTP 1.1 OK
-                outputBuffer.Write(_http11OK);
+                var path = new Span<byte>(_path);
+
+                if (path.StartsWith(Paths.Plaintext))
+                {
+                    PlainText(ref outputBuffer);
+                }
+                else if (path.StartsWith(Paths.Json))
+                {
+                    Json(ref outputBuffer);
+                }
+                else
+                {
+                    Default(ref outputBuffer);
+                }
             }
 
-            private static void WriteCommonHeaders(WritableBuffer outputBuffer)
+            private static void Default(ref WritableBuffer outputBuffer)
+            {
+                var writer = new WritableBufferWriter(outputBuffer);
+
+                writer.Write(_http11OK);
+                WriteCommonHeaders(ref writer);
+
+                writer.Write(_headerContentLength);
+                writer.Span[0] = 48;
+                writer.Advance(1);
+                writer.Write(_crlf);
+
+                // End of headers
+                writer.Write(_crlf);
+            }
+
+            private static void Json(ref WritableBuffer outputBuffer)
+            {
+                var writer = new WritableBufferWriter(outputBuffer);
+
+                writer.Write(_http11OK);
+                WriteCommonHeaders(ref writer);
+
+                writer.Write(_headerContentTypeJson);
+                writer.Write(_crlf);
+
+                var jsonPayload = Encoding.UTF8.GetBytes(Jil.JSON.Serialize(new { message = "Hello, World!" }));
+
+                writer.Write(_headerContentLength);
+                PipelineExtensions.WriteNumeric(ref writer, (ulong)jsonPayload.Length);
+                writer.Write(_crlf);
+
+                // End of headers
+                writer.Write(_crlf);
+
+                // Body
+                writer.Write(jsonPayload);
+            }
+
+            private static void PlainText(ref WritableBuffer outputBuffer)
+            {
+                var writer = new WritableBufferWriter(outputBuffer);
+                // HTTP 1.1 OK
+                writer.Write(_http11OK);
+                WriteCommonHeaders(ref writer);
+
+                writer.Write(_headerContentTypeText);
+                writer.Write(_crlf);
+
+                writer.Write(_headerContentLength);
+                PipelineExtensions.WriteNumeric(ref writer, (ulong)_plainTextBody.Length);
+                writer.Write(_crlf);
+
+                // End of headers
+                writer.Write(_crlf);
+
+                // Body
+                writer.Write(_plainTextBody);
+            }
+
+            private static void WriteCommonHeaders(ref WritableBufferWriter writer)
             {
                 // Server headers
-                outputBuffer.Write(_headerServer);
-                outputBuffer.Write(_crlf);
+                writer.Write(_headerServer);
+                writer.Write(_crlf);
 
                 // Date header
-                outputBuffer.Write(_headerDate);
-                outputBuffer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
-                outputBuffer.Write(_crlf);
+                writer.Write(_headerDate);
+                writer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
+                writer.Write(_crlf);
             }
 
             private void ParseHttpRequest(HttpParser<HttpConnectionContext> parser, ReadableBuffer inputBuffer, out ReadCursor consumed, out ReadCursor examined)
@@ -243,7 +285,6 @@ namespace PlatformLevelTechempower
             public void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
             {
                 _method = method;
-                _pathSpan = path;
                 _path = path.ToArray();
             }
 

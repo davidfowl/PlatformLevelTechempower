@@ -6,7 +6,7 @@ namespace PlatformLevelTechempower
     {
         private Args() { }
 
-        public Mode Mode { get; set; } = Mode.HttpServer;
+        public Mode Mode { get; set; } = Mode.Raw;
 
         public int Port { get; set; } = 8081;
 
