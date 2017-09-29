@@ -23,7 +23,7 @@ namespace PlatformLevelTechempower
                 if (string.Equals(namePrefix + nameof(Mode), name, StringComparison.OrdinalIgnoreCase))
                 {
                     var value = args[i + 1];
-                    if (Enum.TryParse(value, out Mode mode))
+                    if (Enum.TryParse(value, ignoreCase: true, result: out Mode mode))
                     {
                         result.Mode = mode;
                     }
