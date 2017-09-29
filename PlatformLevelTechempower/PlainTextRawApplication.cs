@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Utf8Json;
 
 namespace PlatformLevelTechempower
 {
@@ -246,18 +247,18 @@ namespace PlatformLevelTechempower
                 writer.Write(_headerContentTypeJson);
                 writer.Write(_crlf);
 
-                var jsonPayload = Encoding.UTF8.GetBytes(Jil.JSON.Serialize(new { message = "Hello, World!" }));
+                var jsonPayload = JsonSerializer.SerializeUnsafe(new { message = "Hello, World!" });
 
                 // Content-Length header
                 writer.Write(_headerContentLength);
-                PipelineExtensions.WriteNumeric(ref writer, (ulong)jsonPayload.Length);
+                PipelineExtensions.WriteNumeric(ref writer, (ulong)jsonPayload.Count);
                 writer.Write(_crlf);
 
                 // End of headers
                 writer.Write(_crlf);
 
                 // Body
-                writer.Write(jsonPayload);
+                writer.Write(jsonPayload.Array, jsonPayload.Offset, jsonPayload.Count);
             }
 
             private static void PlainText(ref WritableBuffer outputBuffer)
