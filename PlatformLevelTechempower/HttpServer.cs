@@ -58,8 +58,10 @@ namespace PlatformLevelTechempower
 
         IConnectionContext IConnectionHandler.OnConnection(IConnectionInformation connectionInfo)
         {
-            var inputOptions = new PipeOptions { WriterScheduler = InlineScheduler.Default };
-            var outputOptions = new PipeOptions { ReaderScheduler = InlineScheduler.Default };
+            //var inputOptions = new PipeOptions { WriterScheduler = InlineScheduler.Default };
+            //var outputOptions = new PipeOptions { ReaderScheduler = InlineScheduler.Default };
+            var inputOptions = new PipeOptions { WriterScheduler = connectionInfo.InputWriterScheduler };
+            var outputOptions = new PipeOptions { ReaderScheduler = connectionInfo.OutputReaderScheduler };
 
             var context = new HttpConnectionContext<THandler>
             {
@@ -76,6 +78,8 @@ namespace PlatformLevelTechempower
         private class HttpConnectionContext<THandlerInner> : IConnectionContext, IHttpHeadersHandler, IHttpRequestLineHandler
             where THandlerInner : HttpHandler, new()
         {
+            private static readonly HttpParser<HttpConnectionContext<THandlerInner>> _parser = new HttpParser<HttpConnectionContext<THandlerInner>>();
+
             private HttpHandler _handler;
 
             private State _state;
@@ -109,8 +113,6 @@ namespace PlatformLevelTechempower
             {
                 try
                 {
-                    var parser = new HttpParser<HttpConnectionContext<THandlerInner>>();
-
                     while (true)
                     {
                         var result = await Input.Reader.ReadAsync();
@@ -125,7 +127,7 @@ namespace PlatformLevelTechempower
                                 break;
                             }
 
-                            ParseHttpRequest(parser, inputBuffer, out consumed, out examined);
+                            ParseHttpRequest(inputBuffer, out consumed, out examined);
 
                             if (_state != State.Body && result.IsCompleted)
                             {
@@ -164,14 +166,14 @@ namespace PlatformLevelTechempower
                 }
             }
 
-            private void ParseHttpRequest(HttpParser<HttpConnectionContext<THandlerInner>> parser, ReadableBuffer inputBuffer, out ReadCursor consumed, out ReadCursor examined)
+            private void ParseHttpRequest(ReadableBuffer inputBuffer, out ReadCursor consumed, out ReadCursor examined)
             {
                 consumed = inputBuffer.Start;
                 examined = inputBuffer.End;
 
                 if (_state == State.StartLine)
                 {
-                    if (parser.ParseRequestLine(this, inputBuffer, out consumed, out examined))
+                    if (_parser.ParseRequestLine(this, inputBuffer, out consumed, out examined))
                     {
                         _state = State.Headers;
                         inputBuffer = inputBuffer.Slice(consumed);
@@ -180,7 +182,7 @@ namespace PlatformLevelTechempower
 
                 if (_state == State.Headers)
                 {
-                    if (parser.ParseHeaders(this, inputBuffer, out consumed, out examined, out int consumedBytes))
+                    if (_parser.ParseHeaders(this, inputBuffer, out consumed, out examined, out int consumedBytes))
                     {
                         _state = State.Body;
                     }
@@ -194,12 +196,12 @@ namespace PlatformLevelTechempower
 
             public void OnHeader(Span<byte> name, Span<byte> value)
             {
-                if (name.SequenceEqual(_headerConnection) && value.SequenceEqual(_headerConnectionKeepAlive))
-                {
-                    _handler.KeepAlive = true;
-                }
+                //if (name.SequenceEqual(_headerConnection) && value.SequenceEqual(_headerConnectionKeepAlive))
+                //{
+                //    _handler.KeepAlive = true;
+                //}
 
-                _handler.OnHeader(name, value);
+                //_handler.OnHeader(name, value);
             }
 
             private enum State
@@ -270,27 +272,23 @@ namespace PlatformLevelTechempower
         {
             Method = method;
 
-            if (path.Length > _pathFixedBuffer.Length)
+            if (path.TryCopyTo(_pathFixedBuffer))
+            {
+                _pathLength = path.Length;
+            }
+            else // path > 128
             {
                 _pathLargeBuffer = path.ToArray();
             }
-            else
-            {
-                _pathLargeBuffer = null;
-                path.CopyTo(_pathFixedBuffer);
-            }
-            _pathLength = path.Length;
 
-            if (query.Length > _queryFixedBuffer.Length)
+            if (query.TryCopyTo(_queryFixedBuffer))
+            {
+                _queryLength = query.Length;
+            }
+            else // query > 128
             {
                 _queryLargeBuffer = query.ToArray();
             }
-            else
-            {
-                _queryLargeBuffer = null;
-                path.CopyTo(_queryFixedBuffer);
-            }
-            _queryLength = query.Length;
 
             OnStartLine(method, version, target, path, query, customMethod, pathEncoded);
         }

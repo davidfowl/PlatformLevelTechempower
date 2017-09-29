@@ -212,10 +212,8 @@ namespace PlatformLevelTechempower
 
                 // Server headers
                 writer.Write(_headerServer);
-                writer.Write(_crlf);
 
                 // Date header
-                writer.Write(_headerDate);
                 writer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
                 writer.Write(_crlf);
 
@@ -236,10 +234,8 @@ namespace PlatformLevelTechempower
 
                 // Server headers
                 writer.Write(_headerServer);
-                writer.Write(_crlf);
 
                 // Date header
-                writer.Write(_headerDate);
                 writer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
                 writer.Write(_crlf);
 
@@ -269,10 +265,8 @@ namespace PlatformLevelTechempower
 
                 // Server headers
                 writer.Write(_headerServer);
-                writer.Write(_crlf);
 
                 // Date header
-                writer.Write(_headerDate);
                 writer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
                 writer.Write(_crlf);
 
