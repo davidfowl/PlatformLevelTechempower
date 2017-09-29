@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
@@ -13,11 +15,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Utf8Json;
-using Microsoft.Net.Http.Headers;
 
 namespace PlatformLevelTechempower
 {
-    public class HttpServer<THandler> : IConnectionHandler, IServerApplication where THandler : Handler, new()
+    public class HttpServer<THandler> : IConnectionHandler, IServerApplication where THandler : HttpHandler, new()
     {
         private static readonly byte[] _headerConnection = Encoding.ASCII.GetBytes("Connection");
         private static readonly byte[] _headerConnectionKeepAlive = Encoding.ASCII.GetBytes("keep-alive");
@@ -57,10 +58,10 @@ namespace PlatformLevelTechempower
 
         IConnectionContext IConnectionHandler.OnConnection(IConnectionInformation connectionInfo)
         {
-            var inputOptions = new PipeOptions { WriterScheduler = connectionInfo.InputWriterScheduler };
-            var outputOptions = new PipeOptions { ReaderScheduler = connectionInfo.OutputReaderScheduler };
+            var inputOptions = new PipeOptions { WriterScheduler = InlineScheduler.Default };
+            var outputOptions = new PipeOptions { ReaderScheduler = InlineScheduler.Default };
 
-            var context = new HttpConnectionContext<THandler>()
+            var context = new HttpConnectionContext<THandler>
             {
                 ConnectionId = Guid.NewGuid().ToString(),
                 Input = connectionInfo.PipeFactory.Create(inputOptions),
@@ -73,9 +74,9 @@ namespace PlatformLevelTechempower
         }
 
         private class HttpConnectionContext<THandlerInner> : IConnectionContext, IHttpHeadersHandler, IHttpRequestLineHandler
-            where THandlerInner : Handler, new()
+            where THandlerInner : HttpHandler, new()
         {
-            private readonly Handler _handler;
+            private HttpHandler _handler;
 
             private State _state;
 
@@ -96,12 +97,12 @@ namespace PlatformLevelTechempower
 
             public void Abort(Exception ex)
             {
-
+                _handler = null;
             }
 
             public void OnConnectionClosed(Exception ex)
             {
-
+                _handler = null;
             }
 
             public async Task ExecuteAsync()
@@ -136,7 +137,7 @@ namespace PlatformLevelTechempower
                             {
                                 var outputBuffer = Output.Writer.Alloc();
 
-                                _handler.Output = new WritableBufferWriter(outputBuffer);
+                                _handler.Output = outputBuffer;
 
                                 await _handler.ProcessAsync();
 
@@ -188,15 +189,7 @@ namespace PlatformLevelTechempower
 
             public void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
             {
-                _handler.Method = method;
-
-                Array.Clear(_handler.Path, 0, _handler.Path.Length);
-                path.CopyTo(_handler.Path);
-                _handler.PathLength = path.Length;
-
-                Array.Clear(_handler.Query, 0, _handler.Query.Length);
-                query.CopyTo(_handler.Query);
-                _handler.QueryLength = query.Length;
+                _handler.HandleStartLine(method, version, target, path, query, customMethod, pathEncoded);
             }
 
             public void OnHeader(Span<byte> name, Span<byte> value)
@@ -243,7 +236,7 @@ namespace PlatformLevelTechempower
         }
     }
 
-    public abstract class Handler
+    public abstract class HttpHandler
     {
         private static readonly byte[] _crlf = Encoding.ASCII.GetBytes("\r\n");
         private static readonly byte[] _http11StartLine = Encoding.ASCII.GetBytes("HTTP/1.1 ");
@@ -251,24 +244,63 @@ namespace PlatformLevelTechempower
         private static readonly byte[] _headerServer = Encoding.ASCII.GetBytes("Server: Kestrel");
         private static readonly byte[] _headerContentLength = Encoding.ASCII.GetBytes("Content-Length: ");
         private static readonly byte[] _headerContentType = Encoding.ASCII.GetBytes("Content-Type: ");
-        private static readonly byte[] _headerContentLengthZero = Encoding.ASCII.GetBytes("0");
         private static readonly byte[] _headerConnectionKeepAlive = Encoding.ASCII.GetBytes("Connection: keep-alive");
 
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
 
+        private readonly byte[] _pathFixedBuffer = new byte[128];
+        private byte[] _pathLargeBuffer;
+        private int _pathLength;
+
+        private readonly byte[] _queryFixedBuffer = new byte[128];
+        private byte[] _queryLargeBuffer;
+        private int _queryLength;
+
         public HttpMethod Method { get; set; }
 
-        public byte[] Path { get; set; } = new byte[256];
+        public Span<byte> Path => _pathLargeBuffer != null ? _pathLargeBuffer.AsSpan() : new Span<byte>(_pathFixedBuffer, 0, _pathLength);
 
-        public int PathLength { get; set; }
-
-        public byte[] Query { get; set; } = new byte[256];
-
-        public int QueryLength { get; set; }
+        public Span<byte> Query => _queryLargeBuffer != null ? _queryLargeBuffer.AsSpan() : new Span<byte>(_queryFixedBuffer, 0, _queryLength);
 
         public bool KeepAlive { get; set; }
 
-        public WritableBufferWriter Output { get; set; }
+        internal WritableBuffer Output { get; set; }
+
+        internal void HandleStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
+        {
+            Method = method;
+
+            if (path.Length > _pathFixedBuffer.Length)
+            {
+                _pathLargeBuffer = path.ToArray();
+            }
+            else
+            {
+                _pathLargeBuffer = null;
+                Array.Clear(_pathFixedBuffer, 0, _pathLength);
+                path.CopyTo(_pathFixedBuffer);
+            }
+            _pathLength = path.Length;
+
+            if (query.Length > _queryFixedBuffer.Length)
+            {
+                _queryLargeBuffer = query.ToArray();
+            }
+            else
+            {
+                _queryLargeBuffer = null;
+                Array.Clear(_queryFixedBuffer, 0, _queryLength);
+                path.CopyTo(_queryFixedBuffer);
+            }
+            _queryLength = query.Length;
+
+            OnStartLine(method, version, target, path, query, customMethod, pathEncoded);
+        }
+
+        public virtual void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
+        {
+
+        }
 
         public virtual void OnHeader(Span<byte> name, Span<byte> value)
         {
@@ -277,10 +309,9 @@ namespace PlatformLevelTechempower
 
         public abstract Task ProcessAsync();
 
-        public bool PathMatch(byte[] path, byte[] target)
+        public bool PathMatch(byte[] target)
         {
-            var pathSpan = path.AsSpan().Slice(0, PathLength);
-            return pathSpan.SequenceEqual(target);
+            return Path.SequenceEqual(target);
         }
 
         public void Ok(byte[] body, MediaType mediaType)
@@ -304,12 +335,11 @@ namespace PlatformLevelTechempower
 
             WriteHeader(_headerContentType, MediaType.ApplicationJson.Value);
 
-            var body = JsonSerializer.Serialize(value);
-
-            WriteHeader(_headerContentLength, (ulong)body.Length);
+            var body = JsonSerializer.SerializeUnsafe(value);
+            WriteHeader(_headerContentLength, (ulong)body.Count);
 
             Output.Write(_crlf);
-            Output.Write(body);
+            Output.Write(body.Array, body.Offset, body.Count);
         }
 
         public void NotFound()
@@ -324,10 +354,10 @@ namespace PlatformLevelTechempower
 
         public void WriteHeader(byte[] name, ulong value)
         {
-            var output = Output;
-            output.Write(name);
+            Output.Write(name);
+            var output = new WritableBufferWriter(Output);
             PipelineExtensions.WriteNumeric(ref output, value);
-            output.Write(_crlf);
+            Output.Write(_crlf);
         }
 
         public void WriteHeader(byte[] name, byte[] value)
