@@ -87,6 +87,10 @@ namespace PlatformLevelTechempower
             private HttpMethod _method;
             private byte[] _path;
 
+            // Paths < 256 bytes are copied to here and this is reused per connection
+            private byte[] _pathBuffer = new byte[256];
+            private int _pathLength;
+
             public string ConnectionId { get; set; }
 
             public IPipe Input { get; set; }
@@ -148,6 +152,8 @@ namespace PlatformLevelTechempower
 
                                 await outputBuffer.FlushAsync();
 
+                                _path = null;
+
                                 _state = State.StartLine;
                             }
                         }
@@ -171,7 +177,16 @@ namespace PlatformLevelTechempower
 
             private void HandleRequest(ref WritableBuffer outputBuffer)
             {
-                var path = new Span<byte>(_path);
+                Span<byte> path;
+
+                if (_path != null)
+                {
+                    path = _path;
+                }
+                else
+                {
+                    path = new Span<byte>(_pathBuffer, 0, _pathLength);
+                }
 
                 if (path.StartsWith(Paths.Plaintext))
                 {
@@ -302,7 +317,15 @@ namespace PlatformLevelTechempower
             public void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
             {
                 _method = method;
-                _path = path.ToArray();
+
+                if (path.TryCopyTo(_pathBuffer))
+                {
+                    _pathLength = path.Length;
+                }
+                else // path > 256
+                {
+                    _path = path.ToArray();
+                }
             }
 
             public void OnHeader(Span<byte> name, Span<byte> value)
