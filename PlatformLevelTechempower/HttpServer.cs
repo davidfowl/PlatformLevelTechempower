@@ -47,7 +47,7 @@ namespace PlatformLevelTechempower
             var transport = libuvTransport.Create(binding, this);
             await transport.BindAsync();
 
-            Console.WriteLine($"Server listening on http://*:{port}");
+            Console.WriteLine($"Server listening on http://*:{port} with {libuvOptions.ThreadCount} thread(s)");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 
