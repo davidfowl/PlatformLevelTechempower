@@ -20,9 +20,10 @@ namespace PlatformLevelTechempower
         private static readonly byte[] _headerServer = Encoding.UTF8.GetBytes("Server: Custom");
         private static readonly byte[] _headerDate = Encoding.UTF8.GetBytes("Date: ");
         private static readonly byte[] _headerContentLength = Encoding.UTF8.GetBytes("Content-Length: ");
+        private static readonly byte[] _headerContentLengthZero = Encoding.UTF8.GetBytes("Content-Length: 0");
         private static readonly byte[] _headerContentTypeText = Encoding.UTF8.GetBytes("Content-Type: text/plain");
         private static readonly byte[] _headerContentTypeJson = Encoding.UTF8.GetBytes("Content-Type: application/json");
-        
+
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
         private static readonly HttpParser<HttpConnectionContext> _parser = new HttpParser<HttpConnectionContext>();
 
@@ -135,7 +136,7 @@ namespace PlatformLevelTechempower
                             if (_state == State.Body)
                             {
                                 var outputBuffer = Output.Writer.Alloc();
-                                
+
                                 if (_method == HttpMethod.Get)
                                 {
                                     HandleRequest(ref outputBuffer);
@@ -190,12 +191,20 @@ namespace PlatformLevelTechempower
             {
                 var writer = new WritableBufferWriter(outputBuffer);
 
+                // HTTP 1.1 OK
                 writer.Write(_http11OK);
-                WriteCommonHeaders(ref writer);
 
-                writer.Write(_headerContentLength);
-                writer.Span[0] = 48;
-                writer.Advance(1);
+                // Server headers
+                writer.Write(_headerServer);
+                writer.Write(_crlf);
+
+                // Date header
+                writer.Write(_headerDate);
+                writer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
+                writer.Write(_crlf);
+
+                // Content-Length 0
+                writer.Write(_headerContentLengthZero);
                 writer.Write(_crlf);
 
                 // End of headers
@@ -206,14 +215,25 @@ namespace PlatformLevelTechempower
             {
                 var writer = new WritableBufferWriter(outputBuffer);
 
+                // HTTP 1.1 OK
                 writer.Write(_http11OK);
-                WriteCommonHeaders(ref writer);
 
+                // Server headers
+                writer.Write(_headerServer);
+                writer.Write(_crlf);
+
+                // Date header
+                writer.Write(_headerDate);
+                writer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
+                writer.Write(_crlf);
+
+                // Content-Type header
                 writer.Write(_headerContentTypeJson);
                 writer.Write(_crlf);
 
                 var jsonPayload = Encoding.UTF8.GetBytes(Jil.JSON.Serialize(new { message = "Hello, World!" }));
 
+                // Content-Length header
                 writer.Write(_headerContentLength);
                 PipelineExtensions.WriteNumeric(ref writer, (ulong)jsonPayload.Length);
                 writer.Write(_crlf);
@@ -230,11 +250,21 @@ namespace PlatformLevelTechempower
                 var writer = new WritableBufferWriter(outputBuffer);
                 // HTTP 1.1 OK
                 writer.Write(_http11OK);
-                WriteCommonHeaders(ref writer);
 
+                // Server headers
+                writer.Write(_headerServer);
+                writer.Write(_crlf);
+
+                // Date header
+                writer.Write(_headerDate);
+                writer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
+                writer.Write(_crlf);
+
+                // Content-Type header
                 writer.Write(_headerContentTypeText);
                 writer.Write(_crlf);
 
+                // Content-Length header
                 writer.Write(_headerContentLength);
                 PipelineExtensions.WriteNumeric(ref writer, (ulong)_plainTextBody.Length);
                 writer.Write(_crlf);
@@ -244,18 +274,6 @@ namespace PlatformLevelTechempower
 
                 // Body
                 writer.Write(_plainTextBody);
-            }
-
-            private static void WriteCommonHeaders(ref WritableBufferWriter writer)
-            {
-                // Server headers
-                writer.Write(_headerServer);
-                writer.Write(_crlf);
-
-                // Date header
-                writer.Write(_headerDate);
-                writer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
-                writer.Write(_crlf);
             }
 
             private void ParseHttpRequest(ReadableBuffer inputBuffer, out ReadCursor consumed, out ReadCursor examined)
