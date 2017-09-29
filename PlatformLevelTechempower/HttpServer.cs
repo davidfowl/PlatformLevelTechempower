@@ -48,7 +48,7 @@ namespace PlatformLevelTechempower
             var transport = libuvTransport.Create(binding, this);
             await transport.BindAsync();
 
-            Console.WriteLine($"Server listening on http://*:{port} with {libuvOptions.ThreadCount} thread(s)");
+            Console.WriteLine($"Server (HttpServer) listening on http://*:{port} with {libuvOptions.ThreadCount} thread(s)");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 
@@ -277,7 +277,6 @@ namespace PlatformLevelTechempower
             else
             {
                 _pathLargeBuffer = null;
-                Array.Clear(_pathFixedBuffer, 0, _pathLength);
                 path.CopyTo(_pathFixedBuffer);
             }
             _pathLength = path.Length;
@@ -289,7 +288,6 @@ namespace PlatformLevelTechempower
             else
             {
                 _queryLargeBuffer = null;
-                Array.Clear(_queryFixedBuffer, 0, _queryLength);
                 path.CopyTo(_queryFixedBuffer);
             }
             _queryLength = query.Length;
