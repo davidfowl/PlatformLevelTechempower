@@ -24,6 +24,7 @@ namespace PlatformLevelTechempower
         private static readonly byte[] _headerContentTypeJson = Encoding.UTF8.GetBytes("Content-Type: application/json");
         
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
+        private static readonly HttpParser<HttpConnectionContext> _parser = new HttpParser<HttpConnectionContext>();
 
         private static readonly byte[] _plainTextBody = Encoding.UTF8.GetBytes("Hello, World!");
 
@@ -64,7 +65,7 @@ namespace PlatformLevelTechempower
             {
                 ConnectionId = Guid.NewGuid().ToString(),
                 Input = connectionInfo.PipeFactory.Create(inputOptions),
-                Output = connectionInfo.PipeFactory.Create(outputOptions)
+                Output = connectionInfo.PipeFactory.Create(outputOptions),
             };
 
             _ = context.ExecuteAsync();
@@ -109,8 +110,6 @@ namespace PlatformLevelTechempower
             {
                 try
                 {
-                    var parser = new HttpParser<HttpConnectionContext>();
-
                     while (true)
                     {
                         var result = await Input.Reader.ReadAsync();
@@ -125,7 +124,7 @@ namespace PlatformLevelTechempower
                                 break;
                             }
 
-                            ParseHttpRequest(parser, inputBuffer, out consumed, out examined);
+                            ParseHttpRequest(inputBuffer, out consumed, out examined);
 
                             if (_state != State.Body && result.IsCompleted)
                             {
@@ -259,14 +258,14 @@ namespace PlatformLevelTechempower
                 writer.Write(_crlf);
             }
 
-            private void ParseHttpRequest(HttpParser<HttpConnectionContext> parser, ReadableBuffer inputBuffer, out ReadCursor consumed, out ReadCursor examined)
+            private void ParseHttpRequest(ReadableBuffer inputBuffer, out ReadCursor consumed, out ReadCursor examined)
             {
                 consumed = inputBuffer.Start;
                 examined = inputBuffer.End;
 
                 if (_state == State.StartLine)
                 {
-                    if (parser.ParseRequestLine(this, inputBuffer, out consumed, out examined))
+                    if (_parser.ParseRequestLine(this, inputBuffer, out consumed, out examined))
                     {
                         _state = State.Headers;
                         inputBuffer = inputBuffer.Slice(consumed);
@@ -275,7 +274,7 @@ namespace PlatformLevelTechempower
 
                 if (_state == State.Headers)
                 {
-                    if (parser.ParseHeaders(this, inputBuffer, out consumed, out examined, out int consumedBytes))
+                    if (_parser.ParseHeaders(this, inputBuffer, out consumed, out examined, out int consumedBytes))
                     {
                         _state = State.Body;
                     }
