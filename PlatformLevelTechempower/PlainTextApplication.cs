@@ -21,20 +21,23 @@ namespace PlatformLevelTechempower
         private static readonly int _helloWorldLength = _helloWorldPayload.Length;
         private static readonly string _helloWorldLengthValue = _helloWorldPayload.Length.ToString();
 
-        public async Task RunAsync(int port)
+        public async Task RunAsync(int port, int threadCount)
         {
             var lifetime = new ApplicationLifetime(NullLoggerFactory.Instance.CreateLogger<ApplicationLifetime>());
 
             Console.CancelKeyPress += (sender, e) => lifetime.StopApplication();
 
-            var libuvOptions = new LibuvTransportOptions();
+            var libuvOptions = new LibuvTransportOptions
+            {
+                ThreadCount = threadCount
+            };
             var libuvTransport = new LibuvTransportFactory(
                 Options.Create(libuvOptions),
                 lifetime,
                 NullLoggerFactory.Instance);
 
             var serverOptions = new KestrelServerOptions();
-            serverOptions.Listen(IPAddress.Loopback, port);
+            serverOptions.Listen(IPAddress.Any, port);
 
             var server = new KestrelServer(Options.Create(serverOptions),
                                            libuvTransport,
@@ -42,7 +45,7 @@ namespace PlatformLevelTechempower
 
             await server.StartAsync(this, CancellationToken.None);
 
-            Console.WriteLine($"Server listening on http://localhost:{port}");
+            Console.WriteLine($"Server listening on http://*:{port}");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 

@@ -7,6 +7,6 @@ namespace PlatformLevelTechempower
 {
     public interface IServerApplication
     {
-        Task RunAsync(int port);
+        Task RunAsync(int port, int threadCount);
     }
 }

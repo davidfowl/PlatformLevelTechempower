@@ -15,26 +15,39 @@ namespace PlatformLevelTechempower
 {
     public class PlainTextRawApplication : IConnectionHandler, IServerApplication
     {
-        private static readonly byte[] _plainTextResposne = Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 13\r\nContent-Type: text/plain\r\n\r\nHello, World!");
+        private static readonly byte[] _crlf = Encoding.UTF8.GetBytes("\r\n");
+        private static readonly byte[] _http11OK = Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\n");
+        private static readonly byte[] _headerServer = Encoding.UTF8.GetBytes("Server: Custom");
+        private static readonly byte[] _headerDate = Encoding.UTF8.GetBytes("Date: ");
+        private static readonly byte[] _headerContentLength = Encoding.UTF8.GetBytes("Content-Length: ");
+        private static readonly byte[] _headerContentTypeText = Encoding.UTF8.GetBytes("Content-Type: text/plain");
+        private static readonly byte[] _headerContentTypeJson = Encoding.UTF8.GetBytes("Content-Type: application/json");
+        
+        private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
 
-        public async Task RunAsync(int port)
+        private static readonly byte[] _plainTextBody = Encoding.UTF8.GetBytes("Hello, World!");
+
+        public async Task RunAsync(int port, int threadCount)
         {
             var lifetime = new ApplicationLifetime(NullLoggerFactory.Instance.CreateLogger<ApplicationLifetime>());
 
             Console.CancelKeyPress += (sender, e) => lifetime.StopApplication();
 
-            var libuvOptions = new LibuvTransportOptions();
+            var libuvOptions = new LibuvTransportOptions
+            {
+                ThreadCount = threadCount
+            };
             var libuvTransport = new LibuvTransportFactory(
                 Options.Create(libuvOptions),
                 lifetime,
                 NullLoggerFactory.Instance);
 
-            var binding = new IPEndPointInformation(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, port));
+            var binding = new IPEndPointInformation(new System.Net.IPEndPoint(System.Net.IPAddress.Any, port));
 
             var transport = libuvTransport.Create(binding, this);
             await transport.BindAsync();
 
-            Console.WriteLine($"Server (raw) listening on http://localhost:{port}");
+            Console.WriteLine($"Server (raw) listening on http://*:{port}");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 
@@ -59,9 +72,19 @@ namespace PlatformLevelTechempower
             return context;
         }
 
+        private static class Paths
+        {
+            public static readonly byte[] Plaintext = Encoding.ASCII.GetBytes("/plaintext");
+            public static readonly byte[] Json = Encoding.ASCII.GetBytes("/json");
+        }
+
         private class HttpConnectionContext : IConnectionContext, IHttpHeadersHandler, IHttpRequestLineHandler
         {
             private State _state;
+
+            private HttpMethod _method;
+            private byte[] _path;
+            private Span<byte> _pathSpan;
 
             public string ConnectionId { get; set; }
 
@@ -114,8 +137,47 @@ namespace PlatformLevelTechempower
                             if (_state == State.Body)
                             {
                                 var outputBuffer = Output.Writer.Alloc();
-                                outputBuffer.Write(_plainTextResposne);
+                                
+                                if (_method == HttpMethod.Get)
+                                {
+                                    var path = new Span<byte>(_path);
+                                    if (path.StartsWith(Paths.Plaintext))
+                                    {
+                                        Ok(outputBuffer);
+                                        WriteCommonHeaders(outputBuffer);
+
+                                        outputBuffer.Write(_headerContentTypeText);
+                                        outputBuffer.Write(_crlf);
+
+                                        outputBuffer.Write(_plainTextBody);
+                                    }
+                                    else if (path.StartsWith(Paths.Json))
+                                    {
+                                        Ok(outputBuffer);
+                                        WriteCommonHeaders(outputBuffer);
+
+                                        outputBuffer.Write(_headerContentTypeJson);
+                                        outputBuffer.Write(_crlf);
+
+                                        var jsonPayload = Encoding.UTF8.GetBytes(Jil.JSON.Serialize(new { message = "Hello, World!" }));
+                                        outputBuffer.Write(jsonPayload);
+                                    }
+                                    else
+                                    {
+                                        Ok(outputBuffer);
+                                        WriteCommonHeaders(outputBuffer);
+
+
+                                    }
+                                }
+                                else
+                                {
+                                    Ok(outputBuffer);
+                                    WriteCommonHeaders(outputBuffer);
+                                }
+
                                 await outputBuffer.FlushAsync();
+
                                 _state = State.StartLine;
                             }
                         }
@@ -135,6 +197,24 @@ namespace PlatformLevelTechempower
                 {
                     Output.Writer.Complete();
                 }
+            }
+
+            private static void Ok(WritableBuffer outputBuffer)
+            {
+                // HTTP 1.1 OK
+                outputBuffer.Write(_http11OK);
+            }
+
+            private static void WriteCommonHeaders(WritableBuffer outputBuffer)
+            {
+                // Server headers
+                outputBuffer.Write(_headerServer);
+                outputBuffer.Write(_crlf);
+
+                // Date header
+                outputBuffer.Write(_headerDate);
+                outputBuffer.Write(_dateHeaderValueManager.GetDateHeaderValues().Bytes);
+                outputBuffer.Write(_crlf);
             }
 
             private void ParseHttpRequest(HttpParser<HttpConnectionContext> parser, ReadableBuffer inputBuffer, out ReadCursor consumed, out ReadCursor examined)
@@ -162,6 +242,9 @@ namespace PlatformLevelTechempower
 
             public void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
             {
+                _method = method;
+                _pathSpan = path;
+                _path = path.ToArray();
             }
 
             public void OnHeader(Span<byte> name, Span<byte> value)

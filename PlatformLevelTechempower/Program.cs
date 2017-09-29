@@ -5,64 +5,28 @@ using System.Threading.Tasks;
 
 namespace PlatformLevelTechempower
 {
-    public class Program
+    public partial class Program
     {
         public static Task Main(string[] args)
         {
-            var parsedArgs = ParseArgs(args);
+            var parsedArgs = Args.Parse(args);
 
             IServerApplication app;
 
-            if (parsedArgs.Raw)
+            if (parsedArgs.Mode == Mode.Raw)
             {
                 app = new PlainTextRawApplication();
             }
-            else
+            else if (parsedArgs.Mode == Mode.Features)
             {
                 app = new PlainTextApplication();
             }
-
-            return app.RunAsync(parsedArgs.Port);
-        }
-
-        private static Args ParseArgs(string[] args)
-        {
-            var namePrefix = "--";
-            var result = new Args();
-
-            for (int i = 0; i < args.Length; i++)
+            else
             {
-                var name = args[i];
-                if (string.Equals(namePrefix + nameof(Args.Raw), name, StringComparison.OrdinalIgnoreCase))
-                {
-                    var value = args[i + 1];
-                    if (bool.TryParse(value, out bool raw))
-                    {
-                        result.Raw = raw;
-                    }
-                    i++;
-                    continue;
-                }
-                if (string.Equals(namePrefix + nameof(Args.Port), name, StringComparison.OrdinalIgnoreCase))
-                {
-                    var value = args[i + 1];
-                    if (int.TryParse(value, out int port))
-                    {
-                        result.Port = port;
-                    }
-                    i++;
-                    continue;
-                }
+                app = new HttpServer<BenchmarkHandler>();
             }
 
-            return result;
-        }
-
-        private class Args
-        {
-            public bool Raw { get; set; }
-
-            public int Port { get; set; } = 8081;
+            return app.RunAsync(parsedArgs.Port, parsedArgs.ThreadCount);
         }
     }
 }
