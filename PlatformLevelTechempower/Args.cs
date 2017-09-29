@@ -59,6 +59,7 @@ namespace PlatformLevelTechempower
     public enum Mode
     {
         Raw,
+        RawWithHeaders,
         HttpServer,
         Features
     }

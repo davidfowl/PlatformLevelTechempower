@@ -21,6 +21,10 @@ namespace PlatformLevelTechempower
             {
                 app = new PlainTextApplication();
             }
+            else if (parsedArgs.Mode == Mode.RawWithHeaders)
+            {
+                app = new PlainTextRawWithHeadersApplication();
+            }
             else
             {
                 app = new HttpServer<BenchmarkHandler>();
