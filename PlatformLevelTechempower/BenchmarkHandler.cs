@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 
 namespace PlatformLevelTechempower
 {
-    public class BenchmarkHandler : HttpHandler
+    public sealed class BenchmarkHandler : HttpHandler
     {
         private static readonly byte[] _plainTextBody = Encoding.UTF8.GetBytes("Hello, World!");
 

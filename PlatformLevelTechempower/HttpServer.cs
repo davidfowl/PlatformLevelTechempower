@@ -80,7 +80,7 @@ namespace PlatformLevelTechempower
         {
             private static readonly HttpParser<HttpConnectionContext<THandlerInner>> _parser = new HttpParser<HttpConnectionContext<THandlerInner>>();
 
-            private HttpHandler _handler;
+            private THandlerInner _handler;
 
             private State _state;
 
