@@ -6,10 +6,6 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Internal.System;
 using Microsoft.AspNetCore.Server.Kestrel.Internal.System.IO.Pipelines;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.Internal;
-using Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Utf8Json;
 
 namespace PlatformLevelTechempower
@@ -300,32 +296,6 @@ namespace PlatformLevelTechempower
                 StartLine,
                 Headers,
                 Body
-            }
-        }
-
-
-        public class IPEndPointInformation : IEndPointInformation
-        {
-            public IPEndPointInformation(System.Net.IPEndPoint endPoint)
-            {
-                IPEndPoint = endPoint;
-            }
-
-            public ListenType Type => ListenType.IPEndPoint;
-
-            public System.Net.IPEndPoint IPEndPoint { get; set; }
-
-            public string SocketPath => null;
-
-            public ulong FileHandle => 0;
-
-            public bool NoDelay { get; set; } = true;
-
-            public FileHandleType HandleType { get; set; } = FileHandleType.Tcp;
-
-            public override string ToString()
-            {
-                return IPEndPoint?.ToString();
             }
         }
     }
