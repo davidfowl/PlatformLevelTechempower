@@ -3,52 +3,33 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Internal.System;
 using Microsoft.AspNetCore.Server.Kestrel.Internal.System.IO.Pipelines;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.Internal;
-using Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Utf8Json;
 
 namespace PlatformLevelTechempower
 {
-    public class HttpServer<THandler> : IConnectionHandler, IServerApplication where THandler : HttpHandler, new()
+    public class HttpServer<THandler> : IConnectionHandler, IServerApplication
+        where THandler : HttpHandler, new()
     {
         private static readonly byte[] _headerConnection = Encoding.ASCII.GetBytes("Connection");
         private static readonly byte[] _headerConnectionKeepAlive = Encoding.ASCII.GetBytes("keep-alive");
 
         public static readonly int DefaultThreadCount = Environment.ProcessorCount;
 
-        public Task RunAsync(int port) => RunAsync(port, DefaultThreadCount);
-
-        public async Task RunAsync(int port, int threadCount)
+        public async Task RunAsync(ITransportFactory transportFactory, IEndPointInformation endPointInformation, ApplicationLifetime lifetime)
         {
-            var lifetime = new ApplicationLifetime(NullLoggerFactory.Instance.CreateLogger<ApplicationLifetime>());
-
             Console.CancelKeyPress += (sender, e) => lifetime.StopApplication();
 
-            var libuvOptions = new LibuvTransportOptions
-            {
-                ThreadCount = threadCount
-            };
+            var transport = transportFactory.Create(endPointInformation, this);
 
-            var libuvTransport = new LibuvTransportFactory(
-                Options.Create(libuvOptions),
-                lifetime,
-                NullLoggerFactory.Instance);
-
-            var binding = new IPEndPointInformation(new System.Net.IPEndPoint(System.Net.IPAddress.Any, port));
-
-            var transport = libuvTransport.Create(binding, this);
             await transport.BindAsync();
 
-            Console.WriteLine($"Server (HttpServer) listening on http://*:{port} with {libuvOptions.ThreadCount} thread(s)");
+            Console.WriteLine($"Server ({nameof(HttpServer<THandler>)}) listening on http://{endPointInformation.IPEndPoint}");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 
@@ -58,8 +39,6 @@ namespace PlatformLevelTechempower
 
         IConnectionContext IConnectionHandler.OnConnection(IConnectionInformation connectionInfo)
         {
-            //var inputOptions = new PipeOptions { WriterScheduler = InlineScheduler.Default };
-            //var outputOptions = new PipeOptions { ReaderScheduler = InlineScheduler.Default };
             var inputOptions = new PipeOptions { WriterScheduler = connectionInfo.InputWriterScheduler };
             var outputOptions = new PipeOptions { ReaderScheduler = connectionInfo.OutputReaderScheduler };
 
@@ -191,6 +170,11 @@ namespace PlatformLevelTechempower
 
             public void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
             {
+                if (version != HttpVersion.Http11)
+                {
+                    throw new Exception("Only HTTP 1.1 is supported");
+                }
+
                 _handler.HandleStartLine(method, version, target, path, query, customMethod, pathEncoded);
             }
 

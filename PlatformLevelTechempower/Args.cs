@@ -6,7 +6,11 @@ namespace PlatformLevelTechempower
     {
         private Args() { }
 
-        public Mode Mode { get; set; } = Mode.Raw;
+        public Mode Mode { get; set; } = Mode.RawWithHeaders;
+
+        public Transport Transport { get; set; } = Transport.Libuv;
+
+        public bool Benchmark { get; set; } = false;
 
         public int Port { get; set; } = 8081;
 
@@ -26,6 +30,26 @@ namespace PlatformLevelTechempower
                     if (Enum.TryParse(value, ignoreCase: true, result: out Mode mode))
                     {
                         result.Mode = mode;
+                    }
+                    i++;
+                    continue;
+                }
+                if (string.Equals(namePrefix + nameof(Transport), name, StringComparison.OrdinalIgnoreCase))
+                {
+                    var value = args[i + 1];
+                    if (Enum.TryParse(value, ignoreCase: true, result: out Transport transport))
+                    {
+                        result.Transport = transport;
+                    }
+                    i++;
+                    continue;
+                }
+                if (string.Equals(namePrefix + nameof(Benchmark), name, StringComparison.OrdinalIgnoreCase))
+                {
+                    var value = args[i + 1];
+                    if (bool.TryParse(value, out bool benchmark))
+                    {
+                        result.Benchmark = benchmark;
                     }
                     i++;
                     continue;
@@ -62,5 +86,11 @@ namespace PlatformLevelTechempower
         RawWithHeaders,
         HttpServer,
         Features
+    }
+
+    public enum Transport
+    {
+        Libuv,
+        Sockets
     }
 }

@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.Internal;
 
 namespace PlatformLevelTechempower
 {
@@ -21,31 +22,20 @@ namespace PlatformLevelTechempower
         private static readonly int _helloWorldLength = _helloWorldPayload.Length;
         private static readonly string _helloWorldLengthValue = _helloWorldPayload.Length.ToString();
 
-        public async Task RunAsync(int port, int threadCount)
+        public async Task RunAsync(ITransportFactory transportFactory, IEndPointInformation endPointInformation, ApplicationLifetime lifetime)
         {
-            var lifetime = new ApplicationLifetime(NullLoggerFactory.Instance.CreateLogger<ApplicationLifetime>());
-
             Console.CancelKeyPress += (sender, e) => lifetime.StopApplication();
 
-            var libuvOptions = new LibuvTransportOptions
-            {
-                ThreadCount = threadCount
-            };
-            var libuvTransport = new LibuvTransportFactory(
-                Options.Create(libuvOptions),
-                lifetime,
-                NullLoggerFactory.Instance);
-
             var serverOptions = new KestrelServerOptions();
-            serverOptions.Listen(IPAddress.Any, port);
+            serverOptions.Listen(endPointInformation.IPEndPoint);
 
             var server = new KestrelServer(Options.Create(serverOptions),
-                                           libuvTransport,
+                                           transportFactory,
                                            NullLoggerFactory.Instance);
 
             await server.StartAsync(this, CancellationToken.None);
 
-            Console.WriteLine($"Server listening on http://*:{port} with {libuvOptions.ThreadCount} thread(s)");
+            Console.WriteLine($"Server ({nameof(PlainTextApplication)}) listening on http://{endPointInformation.IPEndPoint}");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 

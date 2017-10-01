@@ -24,27 +24,15 @@ namespace PlatformLevelTechempower
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
         private static readonly HttpParser<HttpConnectionContext> _parser = new HttpParser<HttpConnectionContext>();
 
-        public async Task RunAsync(int port, int threadCount)
+        public async Task RunAsync(ITransportFactory transportFactory, IEndPointInformation endPointInformation, ApplicationLifetime lifetime)
         {
-            var lifetime = new ApplicationLifetime(NullLoggerFactory.Instance.CreateLogger<ApplicationLifetime>());
-
             Console.CancelKeyPress += (sender, e) => lifetime.StopApplication();
 
-            var libuvOptions = new LibuvTransportOptions
-            {
-                ThreadCount = threadCount
-            };
-            var libuvTransport = new LibuvTransportFactory(
-                Options.Create(libuvOptions),
-                lifetime,
-                NullLoggerFactory.Instance);
+            var transport = transportFactory.Create(endPointInformation, this);
 
-            var binding = new IPEndPointInformation(new System.Net.IPEndPoint(System.Net.IPAddress.Any, port));
-
-            var transport = libuvTransport.Create(binding, this);
             await transport.BindAsync();
 
-            Console.WriteLine($"Server (raw with headers) listening on http://*:{port} with {libuvOptions.ThreadCount} thread(s)");
+            Console.WriteLine($"Server ({nameof(PlainTextRawWithHeadersApplication)}) listening on http://{endPointInformation.IPEndPoint}");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 

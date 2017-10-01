@@ -30,27 +30,15 @@ namespace PlatformLevelTechempower
 
         private static readonly byte[] _plainTextBody = Encoding.UTF8.GetBytes("Hello, World!");
 
-        public async Task RunAsync(int port, int threadCount)
+        public async Task RunAsync(ITransportFactory transportFactory, IEndPointInformation endPointInformation, ApplicationLifetime lifetime)
         {
-            var lifetime = new ApplicationLifetime(NullLoggerFactory.Instance.CreateLogger<ApplicationLifetime>());
-
             Console.CancelKeyPress += (sender, e) => lifetime.StopApplication();
 
-            var libuvOptions = new LibuvTransportOptions
-            {
-                ThreadCount = threadCount
-            };
-            var libuvTransport = new LibuvTransportFactory(
-                Options.Create(libuvOptions),
-                lifetime,
-                NullLoggerFactory.Instance);
+            var transport = transportFactory.Create(endPointInformation, this);
 
-            var binding = new IPEndPointInformation(new System.Net.IPEndPoint(System.Net.IPAddress.Any, port));
-
-            var transport = libuvTransport.Create(binding, this);
             await transport.BindAsync();
 
-            Console.WriteLine($"Server (raw) listening on http://*:{port} with {libuvOptions.ThreadCount} thread(s)");
+            Console.WriteLine($"Server ({nameof(PlainTextRawApplication)}) listening on http://{endPointInformation.IPEndPoint}");
 
             lifetime.ApplicationStopping.WaitHandle.WaitOne();
 
@@ -332,32 +320,6 @@ namespace PlatformLevelTechempower
                 StartLine,
                 Headers,
                 Body
-            }
-        }
-
-
-        public class IPEndPointInformation : IEndPointInformation
-        {
-            public IPEndPointInformation(System.Net.IPEndPoint endPoint)
-            {
-                IPEndPoint = endPoint;
-            }
-
-            public ListenType Type => ListenType.IPEndPoint;
-
-            public System.Net.IPEndPoint IPEndPoint { get; set; }
-
-            public string SocketPath => null;
-
-            public ulong FileHandle => 0;
-
-            public bool NoDelay { get; set; } = true;
-
-            public FileHandleType HandleType { get; set; } = FileHandleType.Tcp;
-
-            public override string ToString()
-            {
-                return IPEndPoint?.ToString();
             }
         }
     }

@@ -13,5 +13,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.0.0" />
     <PackageReference Include="Jil" Version="2.15.4" />
     <PackageReference Include="Utf8Json" Version="1.0.2" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.10.2" />
   </ItemGroup>
 </Project>
