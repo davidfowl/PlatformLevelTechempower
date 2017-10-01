@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting.Internal;
@@ -18,7 +17,7 @@ namespace PlatformLevelTechempower
 {
     public class PlainTextApplication : IHttpApplication<IFeatureCollection>, IServerApplication
     {
-        private static readonly byte[] _helloWorldPayload = Encoding.UTF8.GetBytes("Hello, World!");
+        private static AsciiString _helloWorldPayload = "Hello, World!";
         private static readonly int _helloWorldLength = _helloWorldPayload.Length;
         private static readonly string _helloWorldLengthValue = _helloWorldPayload.Length.ToString();
 

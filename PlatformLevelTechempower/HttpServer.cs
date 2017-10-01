@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
@@ -16,8 +12,8 @@ namespace PlatformLevelTechempower
     public class HttpServer<THandler> : IConnectionHandler, IServerApplication
         where THandler : HttpHandler, new()
     {
-        private static readonly byte[] _headerConnection = Encoding.ASCII.GetBytes("Connection");
-        private static readonly byte[] _headerConnectionKeepAlive = Encoding.ASCII.GetBytes("keep-alive");
+        private static AsciiString _headerConnection = "Connection";
+        private static AsciiString _headerConnectionKeepAlive = "keep-alive";
 
         public static readonly int DefaultThreadCount = Environment.ProcessorCount;
 
@@ -224,13 +220,13 @@ namespace PlatformLevelTechempower
 
     public abstract class HttpHandler
     {
-        private static readonly byte[] _crlf = Encoding.ASCII.GetBytes("\r\n");
-        private static readonly byte[] _http11StartLine = Encoding.ASCII.GetBytes("HTTP/1.1 ");
+        private static AsciiString _crlf = "\r\n";
+        private static AsciiString _http11StartLine = "HTTP/1.1 ";
 
-        private static readonly byte[] _headerServer = Encoding.ASCII.GetBytes("Server: Kestrel");
-        private static readonly byte[] _headerContentLength = Encoding.ASCII.GetBytes("Content-Length: ");
-        private static readonly byte[] _headerContentType = Encoding.ASCII.GetBytes("Content-Type: ");
-        private static readonly byte[] _headerConnectionKeepAlive = Encoding.ASCII.GetBytes("Connection: keep-alive");
+        private static AsciiString _headerServer = "Server: Kestrel";
+        private static AsciiString _headerContentLength = "Content-Length: ";
+        private static AsciiString _headerContentType = "Content-Type: ";
+        private static AsciiString _headerConnectionKeepAlive = "Connection: keep-alive";
 
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
 
@@ -289,7 +285,7 @@ namespace PlatformLevelTechempower
 
         public abstract Task ProcessAsync();
 
-        public bool PathMatch(byte[] target)
+        public bool PathMatch(AsciiString target)
         {
             return Path.SequenceEqual(target);
         }
@@ -332,7 +328,7 @@ namespace PlatformLevelTechempower
             WriteResponse(HttpStatus.BadRequest);
         }
 
-        public void WriteHeader(byte[] name, ulong value)
+        public void WriteHeader(AsciiString name, ulong value)
         {
             Output.Write(name);
             var output = new WritableBufferWriter(Output);
@@ -340,7 +336,7 @@ namespace PlatformLevelTechempower
             Output.Write(_crlf);
         }
 
-        public void WriteHeader(byte[] name, byte[] value)
+        public void WriteHeader(AsciiString name, AsciiString value)
         {
             Output.Write(name);
             Output.Write(value);
@@ -386,14 +382,14 @@ namespace PlatformLevelTechempower
         public static HttpStatus NotFound = new HttpStatus(404, "NOT FOUND");
         // etc.
 
-        private readonly byte[] _value;
+        private AsciiString _value;
 
         private HttpStatus(int code, string message)
         {
-            _value = Encoding.ASCII.GetBytes(code.ToString() + " " + message);
+            _value = code.ToString() + " " + message;
         }
 
-        public byte[] Value => _value;
+        public AsciiString Value => _value;
     }
 
     public struct MediaType
@@ -402,13 +398,13 @@ namespace PlatformLevelTechempower
         public static MediaType ApplicationJson = new MediaType("application/json");
         // etc.
 
-        private readonly byte[] _value;
+        private AsciiString _value;
 
         private MediaType(string value)
         {
-            _value = Encoding.ASCII.GetBytes(value);
+            _value = value;
         }
 
-        public byte[] Value => _value;
+        public AsciiString Value => _value;
     }
 }

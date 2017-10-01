@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
@@ -12,10 +11,10 @@ namespace PlatformLevelTechempower
 {
     public class PlainTextRawWithHeadersApplication : IConnectionHandler, IServerApplication
     {
-        private static readonly byte[] _bytesHttpVersion11 = Encoding.ASCII.GetBytes("HTTP/1.1 ");
-        private static readonly byte[] _headerServer = Encoding.UTF8.GetBytes("\r\nServer: Custom");
-        private static readonly byte[] _plainTextBody = Encoding.UTF8.GetBytes("Hello, World!");
-        private static readonly byte[] _bytesEndHeaders = Encoding.ASCII.GetBytes("\r\n\r\n");
+        private static AsciiString _bytesHttpVersion11 = "HTTP/1.1 ";
+        private static AsciiString _headerServer = "\r\nServer: Custom";
+        private static AsciiString _plainTextBody = "Hello, World!";
+        private static AsciiString _bytesEndHeaders = "\r\n\r\n";
 
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
         private static readonly HttpParser<HttpConnectionContext> _parser = new HttpParser<HttpConnectionContext>();
@@ -55,8 +54,8 @@ namespace PlatformLevelTechempower
 
         private static class Paths
         {
-            public static readonly byte[] Plaintext = Encoding.ASCII.GetBytes("/plaintext");
-            public static readonly byte[] Json = Encoding.ASCII.GetBytes("/json");
+            public static AsciiString Plaintext = "/plaintext";
+            public static AsciiString Json = "/json";
         }
 
         private class HttpConnectionContext : IConnectionContext, IHttpHeadersHandler, IHttpRequestLineHandler

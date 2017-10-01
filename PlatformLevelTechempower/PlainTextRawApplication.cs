@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
@@ -16,19 +15,19 @@ namespace PlatformLevelTechempower
 {
     public class PlainTextRawApplication : IConnectionHandler, IServerApplication
     {
-        private static readonly byte[] _crlf = Encoding.UTF8.GetBytes("\r\n");
-        private static readonly byte[] _http11OK = Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\n");
-        private static readonly byte[] _headerServer = Encoding.UTF8.GetBytes("Server: Custom");
-        private static readonly byte[] _headerDate = Encoding.UTF8.GetBytes("Date: ");
-        private static readonly byte[] _headerContentLength = Encoding.UTF8.GetBytes("Content-Length: ");
-        private static readonly byte[] _headerContentLengthZero = Encoding.UTF8.GetBytes("Content-Length: 0");
-        private static readonly byte[] _headerContentTypeText = Encoding.UTF8.GetBytes("Content-Type: text/plain");
-        private static readonly byte[] _headerContentTypeJson = Encoding.UTF8.GetBytes("Content-Type: application/json");
+        private static AsciiString _crlf = "\r\n";
+        private static AsciiString _http11OK = "HTTP/1.1 200 OK\r\n";
+        private static AsciiString _headerServer = "Server: Custom";
+        private static AsciiString _headerDate = "Date: ";
+        private static AsciiString _headerContentLength = "Content-Length: ";
+        private static AsciiString _headerContentLengthZero = "Content-Length: 0";
+        private static AsciiString _headerContentTypeText = "Content-Type: text/plain";
+        private static AsciiString _headerContentTypeJson = "Content-Type: application/json";
 
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
         private static readonly HttpParser<HttpConnectionContext> _parser = new HttpParser<HttpConnectionContext>();
 
-        private static readonly byte[] _plainTextBody = Encoding.UTF8.GetBytes("Hello, World!");
+        private static AsciiString _plainTextBody = "Hello, World!";
 
         public async Task RunAsync(ITransportFactory transportFactory, IEndPointInformation endPointInformation, ApplicationLifetime lifetime)
         {
@@ -65,8 +64,8 @@ namespace PlatformLevelTechempower
 
         private static class Paths
         {
-            public static readonly byte[] Plaintext = Encoding.ASCII.GetBytes("/plaintext");
-            public static readonly byte[] Json = Encoding.ASCII.GetBytes("/json");
+            public static AsciiString Plaintext = "/plaintext";
+            public static AsciiString Json = "/json";
         }
 
         private class HttpConnectionContext : IConnectionContext, IHttpHeadersHandler, IHttpRequestLineHandler
