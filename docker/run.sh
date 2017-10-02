@@ -4,7 +4,8 @@
 set -x
 
 docker run \
-    -d \
+    -it \
+    --rm \
     --name platform-level-techempower \
     --network host \
     platform-level-techempower \
