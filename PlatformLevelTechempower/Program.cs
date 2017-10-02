@@ -59,6 +59,8 @@ namespace PlatformLevelTechempower
                 {
                     ThreadCount = parsedArgs.ThreadCount
                 };
+
+                Console.WriteLine($"Using {nameof(Transport.Libuv)} transport configured with {libuvOptions.ThreadCount} threads.");
                 
                 return new LibuvTransportFactory(
                     Options.Create(libuvOptions),
