@@ -2,7 +2,7 @@
   "Default": {
     "Source": {
       "Repository": "https://github.com/davidfowl/PlatformLevelTechempower.git",
-      "BranchOrCommit": "master",
+      "BranchOrCommit": "davidfowl/testing",
       "Project": "PlatformLevelTechempower/PlatformLevelTechempower.csproj"
     },
     "Port": 8081,
