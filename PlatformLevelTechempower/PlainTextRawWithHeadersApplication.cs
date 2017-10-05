@@ -291,7 +291,7 @@ namespace PlatformLevelTechempower
 
             public void OnHeader(Span<byte> name, Span<byte> value)
             {
-                RequestHeaders.Append(name, value.GetAsciiStringNonNullCharacters());
+                // RequestHeaders.Append(name, value.GetAsciiStringNonNullCharacters());
             }
 
             private enum State
