@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using BenchmarkDotNet.Running;
+using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 
 namespace PlatformLevelTechempower
 {
@@ -69,8 +70,7 @@ namespace PlatformLevelTechempower
             }
             if (parsedArgs.Transport == Transport.Sockets)
             {
-                // TODO: Add the sockets transport
-
+                return new SocketTransportFactory(Options.Create(new SocketTransportOptions()));
             }
 
             return null;

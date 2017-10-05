@@ -8,7 +8,7 @@ namespace PlatformLevelTechempower
 
         public Mode Mode { get; set; } = Mode.RawWithHeaders;
 
-        public Transport Transport { get; set; } = Transport.Libuv;
+        public Transport Transport { get; set; } = Transport.Sockets;
 
         public bool Benchmark { get; set; } = false;
 
