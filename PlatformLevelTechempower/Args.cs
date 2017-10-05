@@ -6,7 +6,7 @@ namespace PlatformLevelTechempower
     {
         private Args() { }
 
-        public Mode Mode { get; set; } = Mode.RawWithHeaders;
+        public Mode Mode { get; set; } = Mode.Raw;
 
         public Transport Transport { get; set; } = Transport.Libuv;
 
