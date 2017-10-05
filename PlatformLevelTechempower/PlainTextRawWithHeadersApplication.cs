@@ -38,8 +38,8 @@ namespace PlatformLevelTechempower
 
         public IConnectionContext OnConnection(IConnectionInformation connectionInfo)
         {
-            var inputOptions = new PipeOptions();// { WriterScheduler = connectionInfo.InputWriterScheduler };
-            var outputOptions = new PipeOptions();// { ReaderScheduler = connectionInfo.OutputReaderScheduler };
+            var inputOptions = new PipeOptions { WriterScheduler = connectionInfo.InputWriterScheduler };
+            var outputOptions = new PipeOptions { ReaderScheduler = connectionInfo.OutputReaderScheduler };
 
             var context = new HttpConnectionContext
             {
