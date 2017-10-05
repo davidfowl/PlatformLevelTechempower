@@ -80,7 +80,6 @@ namespace PlatformLevelTechempower
 
             IPipeReader IConnectionContext.Output => Output.Reader;
 
-            private FrameRequestHeaders RequestHeaders = new FrameRequestHeaders();
             private FrameResponseHeaders ResponseHeaders = new FrameResponseHeaders();
 
             public void Abort(Exception ex)
@@ -136,7 +135,6 @@ namespace PlatformLevelTechempower
 
                                 _path = null;
                                 ResponseHeaders.Reset();
-                                RequestHeaders.Reset();
 
                                 _state = State.StartLine;
                             }
@@ -291,7 +289,6 @@ namespace PlatformLevelTechempower
 
             public void OnHeader(Span<byte> name, Span<byte> value)
             {
-                // RequestHeaders.Append(name, value.GetAsciiStringNonNullCharacters());
             }
 
             private enum State
