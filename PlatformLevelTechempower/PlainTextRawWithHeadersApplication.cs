@@ -136,6 +136,7 @@ namespace PlatformLevelTechempower
 
                                 _path = null;
                                 ResponseHeaders.Reset();
+                                RequestHeaders.Reset();
 
                                 _state = State.StartLine;
                             }
