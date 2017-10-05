@@ -18,7 +18,7 @@ namespace PlatformLevelTechempower
 
         public ulong FileHandle => 0;
 
-        public bool NoDelay { get; set; } = false;
+        public bool NoDelay { get; set; } = true;
 
         public FileHandleType HandleType { get; set; } = FileHandleType.Tcp;
 
