@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
 using Microsoft.AspNetCore.Server.Kestrel.Internal.System;
 using Microsoft.AspNetCore.Server.Kestrel.Internal.System.IO.Pipelines;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.Internal;
@@ -79,6 +80,7 @@ namespace PlatformLevelTechempower
 
             IPipeReader IConnectionContext.Output => Output.Reader;
 
+            private FrameRequestHeaders RequestHeaders = new FrameRequestHeaders();
             private FrameResponseHeaders ResponseHeaders = new FrameResponseHeaders();
 
             public void Abort(Exception ex)
@@ -288,6 +290,7 @@ namespace PlatformLevelTechempower
 
             public void OnHeader(Span<byte> name, Span<byte> value)
             {
+                RequestHeaders.Append(name, value.GetAsciiStringNonNullCharacters());
             }
 
             private enum State
