@@ -3,7 +3,8 @@
     "Source": {
       "Repository": "https://github.com/davidfowl/PlatformLevelTechempower.git",
       "BranchOrCommit": "davidfowl/testing",
-      "Project": "PlatformLevelTechempower/PlatformLevelTechempower.csproj"
+      "Project": "PlatformLevelTechempower/PlatformLevelTechempower.csproj",
+      "DockerFile": "docker/Dockerfile"
     },
     "Port": 8081,
     "AspNetCoreVersion": "2.0.0"
