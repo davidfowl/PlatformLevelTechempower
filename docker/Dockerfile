@@ -2,7 +2,7 @@ FROM microsoft/dotnet:2.0.0-sdk-jessie AS build-env
 WORKDIR /app
 
 # copy sln/csproj and restore as distinct layers
-COPY *.sln ./
+COPY ../*.sln ./
 COPY ../PlatformLevelTechempower/*.csproj PlatformLevelTechempower/
 RUN dotnet restore
 

@@ -1,1 +1,1 @@
-docker build -t platform-level-techempower -f Dockerfile ../
+docker build -t platform-level-techempower -f Dockerfile .
