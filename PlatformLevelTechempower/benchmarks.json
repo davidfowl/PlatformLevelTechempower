@@ -3,7 +3,7 @@
     "Source": {
       "Repository": "https://github.com/davidfowl/PlatformLevelTechempower.git",
       "BranchOrCommit": "davidfowl/testing",
-      "Project": "PlatformLevelTechempower/PlatformLevelTechempower.csproj",
+      "Project": "Foo/Foo.csproj",
       "DockerFile": "docker/Dockerfile"
     },
     "Port": 8081,
