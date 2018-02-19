@@ -9,8 +9,6 @@ namespace PlatformLevelTechempower
     {
         private readonly byte[] _data;
 
-        public AsciiString(byte[] bytes) => _data = bytes;
-
         public AsciiString(string s) => _data = Encoding.ASCII.GetBytes(s);
 
         public int Length => _data.Length;
@@ -18,7 +16,6 @@ namespace PlatformLevelTechempower
         public static implicit operator ReadOnlySpan<byte>(AsciiString str) => str._data;
         public static implicit operator byte[] (AsciiString str) => str._data;
 
-        public static implicit operator AsciiString(byte[] bytes) => new AsciiString(bytes);
         public static implicit operator AsciiString(string str) => new AsciiString(str);
 
         public override string ToString() => HttpUtilities.GetAsciiStringNonNullCharacters(_data);
