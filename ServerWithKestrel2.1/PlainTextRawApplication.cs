@@ -132,7 +132,7 @@ namespace ServerWithKestrel21
 
         private static void Default(PipeWriter pipeWriter)
         {
-            var writer = OutputWriter.Create(pipeWriter);
+            var writer = new BufferWriter<PipeWriter>(pipeWriter);
 
             // HTTP 1.1 OK
             writer.Write(_http11OK);
@@ -150,6 +150,7 @@ namespace ServerWithKestrel21
 
             // End of headers
             writer.Write(_crlf);
+            writer.Commit();
         }
 
         /*private static void Json(PipeWriter pipeWriter)
@@ -186,7 +187,7 @@ namespace ServerWithKestrel21
 
         private static void PlainText(PipeWriter pipeWriter)
         {
-            var writer = OutputWriter.Create(pipeWriter);
+            var writer = new BufferWriter<PipeWriter>(pipeWriter);
             // HTTP 1.1 OK
             writer.Write(_http11OK);
 
@@ -203,7 +204,7 @@ namespace ServerWithKestrel21
 
             // Content-Length header
             writer.Write(_headerContentLength);
-            Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.PipelineExtensions.WriteNumeric(ref writer, (ulong)_plainTextBody.Length);
+            writer.WriteNumeric((ulong)_plainTextBody.Length);
             writer.Write(_crlf);
 
             // End of headers
@@ -211,9 +212,10 @@ namespace ServerWithKestrel21
 
             // Body
             writer.Write(_plainTextBody);
+            writer.Commit();
         }
 
-        private void ParseHttpRequest(ReadOnlyBuffer<byte> inputBuffer, out SequencePosition consumed, out SequencePosition examined)
+        private void ParseHttpRequest(ReadOnlySequence<byte> inputBuffer, out SequencePosition consumed, out SequencePosition examined)
         {
             consumed = inputBuffer.Start;
             examined = inputBuffer.End;
