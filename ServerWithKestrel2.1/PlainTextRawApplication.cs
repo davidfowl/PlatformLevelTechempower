@@ -105,7 +105,7 @@ namespace ServerWithKestrel21
 
         private void HandleRequest(PipeWriter pipeWriter)
         {
-            Span<byte> path;
+            ReadOnlySpan<byte> path;
 
             if (_path != null)
             {
@@ -113,7 +113,7 @@ namespace ServerWithKestrel21
             }
             else
             {
-                path = new Span<byte>(_pathBuffer, 0, _pathLength);
+                path = new ReadOnlySpan<byte>(_pathBuffer, 0, _pathLength);
             }
 
             if (path.StartsWith(Paths.Plaintext))
