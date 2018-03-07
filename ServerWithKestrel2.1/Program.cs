@@ -25,6 +25,11 @@ namespace ServerWithKestrel21
                     {
                         builder.UseHttpApplication<PlainTextConnection>();
                     });
+
+                    options.Listen(IPAddress.Loopback, 5005, builder =>
+                    {
+                        builder.UseHttpApplication<ProxyConnection>();
+                    });
                 })
                 .UseStartup<Startup>()
                 .Build();

@@ -40,7 +40,7 @@ namespace ServerWithKestrel21
 
         public virtual void OnHeader(Span<byte> name, Span<byte> value)
         {
-
+            
         }
 
         public virtual void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
