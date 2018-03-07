@@ -72,17 +72,19 @@ namespace ServerWithKestrel21
                             {
                                 ParseHttpRequest(buffer, out consumed, out examined);
 
-                                if (_state != State.Body && result.IsCompleted)
-                                {
-                                    // Bad request
-                                    break;
-                                }
-
                                 if (_state == State.Body)
                                 {
                                     await ProcessRequestAsync();
 
+                                    // After processing the request, change the state to start line
+                                    // This means the application is responsible for handling body since we assume by the time this returns
+                                    // that the application has processed the entire request
+
                                     _state = State.StartLine;
+                                }
+                                else if (result.IsCompleted)
+                                {
+                                    throw new InvalidOperationException("Unexpected end of data!");
                                 }
                             }
                             else if (result.IsCompleted)
