@@ -47,13 +47,14 @@ namespace ServerWithKestrel21
                 // this concatenated value to obtain a 20-byte value and base64-encoding"
                 // https://tools.ietf.org/html/rfc6455#section-4.2.2
 
-                byte[] mergedBytes = new byte[value.Length + _randomKey.Length];
+                Span<byte> mergedBytes = stackalloc byte[value.Length + _randomKey.Length];
                 value.CopyTo(mergedBytes);
-                _randomKey.AsSpan().CopyTo(mergedBytes.AsSpan().Slice(value.Length));
-                byte[] hashedBytes = _sha1.ComputeHash(mergedBytes);
-                int maxLength = Base64.GetMaxEncodedToUtf8Length(hashedBytes.Length);
+                _randomKey.AsSpan().CopyTo(mergedBytes.Slice(value.Length));
+                Span<byte> sha1Bytes = stackalloc byte[(_sha1.HashSize / 8)];
+                _sha1.TryComputeHash(mergedBytes, sha1Bytes, out int written);
+                int maxLength = Base64.GetMaxEncodedToUtf8Length(written);
                 byte[] target = new byte[maxLength];
-                var status = Base64.EncodeToUtf8(hashedBytes, target, out int consumed, out int written);
+                var status = Base64.EncodeToUtf8(sha1Bytes.Slice(0, written), target, out int consumed, out written);
 
                 _secWebSocketAcceptValue = new ReadOnlyMemory<byte>(target, 0, written);
             }
