@@ -98,6 +98,9 @@ namespace ServerWithKestrel21
             writer.Write(_secWebSocketAcceptValue.Span);
             writer.Write(_crlf);
 
+            // Clear the header
+            _secWebSocketAcceptValue = ReadOnlyMemory<byte>.Empty;
+
             // End of headers
             writer.Write(_crlf);
             writer.Commit();
