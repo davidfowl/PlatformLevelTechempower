@@ -50,11 +50,10 @@ namespace ServerWithKestrel21
                 Span<byte> mergedBytes = stackalloc byte[value.Length + _randomKey.Length];
                 value.CopyTo(mergedBytes);
                 _randomKey.AsSpan().CopyTo(mergedBytes.Slice(value.Length));
-                Span<byte> sha1Bytes = stackalloc byte[(_sha1.HashSize / 8)];
-                _sha1.TryComputeHash(mergedBytes, sha1Bytes, out int written);
-                int maxLength = Base64.GetMaxEncodedToUtf8Length(written);
-                byte[] target = new byte[maxLength];
-                var status = Base64.EncodeToUtf8(sha1Bytes.Slice(0, written), target, out int consumed, out written);
+                // Compute the sha1, base64 encode in place, we need 28 bytes
+                var target = new byte[28];
+                _sha1.TryComputeHash(mergedBytes, target, out int written);
+                var status = Base64.EncodeToUtf8InPlace(target, written, out written);
 
                 _secWebSocketAcceptValue = new ReadOnlyMemory<byte>(target, 0, written);
             }
