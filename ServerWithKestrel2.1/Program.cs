@@ -24,7 +24,7 @@ namespace ServerWithKestrel21
 
                     options.Listen(IPAddress.Loopback, 8087, builder =>
                     {
-                        builder.UseHttpApplication<WebSocketConnection>();
+                        builder.UseHttpApplication<ChatConnection>();
                     });
                 })
                 .UseStartup<Startup>()

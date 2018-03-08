@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 
 namespace ServerWithKestrel21
 {
-    public class WebSocketConnection : HttpConnection
+    public abstract class WebSocketConnection : HttpConnection
     {
         private static AsciiString _crlf = "\r\n";
         private static AsciiString _http101 = "HTTP/1.1 101 Switching Protocols\r\n";
@@ -71,28 +71,7 @@ namespace ServerWithKestrel21
             }
         }
 
-        private async Task ProcessAsync(WebSocket websocket)
-        {
-            Memory<byte> buffer = new byte[4096];
-
-            while (true)
-            {
-                var result = await websocket.ReceiveAsync(buffer, default);
-
-                switch (result.MessageType)
-                {
-                    case WebSocketMessageType.Close:
-                        await websocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", default);
-                        return;
-                    case WebSocketMessageType.Binary:
-                    case WebSocketMessageType.Text:
-                        await websocket.SendAsync(buffer.Slice(0, result.Count), result.MessageType, result.EndOfMessage, default);
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
+        protected abstract Task ProcessAsync(WebSocket websocket);
 
         private void DoUpgrade()
         {
