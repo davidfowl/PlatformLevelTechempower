@@ -19,14 +19,14 @@ namespace ServerWithKestrel21
 
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
 
-        private bool _isPlainText;
-
         private static AsciiString _plainTextBody = "Hello, World!";
 
         private static class Paths
         {
             public static AsciiString Plaintext = "/plaintext";
         }
+
+        private bool _isPlainText;
 
         public override void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
         {
@@ -37,7 +37,7 @@ namespace ServerWithKestrel21
         {
         }
 
-        public override async Task ProcessRequestAsync()
+        public override Task ProcessRequestAsync()
         {
             if (_isPlainText)
             {
@@ -48,6 +48,11 @@ namespace ServerWithKestrel21
                 Default(Connection.Transport.Output);
             }
 
+            return Task.CompletedTask;
+        }
+
+        public override async Task OnReadCompletedAsync()
+        {
             await Connection.Transport.Output.FlushAsync();
         }
 

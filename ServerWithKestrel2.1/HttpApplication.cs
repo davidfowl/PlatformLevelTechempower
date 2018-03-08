@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Protocols;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
-using HttpVersion = Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpVersion;
 
 namespace ServerWithKestrel21
 {
@@ -40,7 +39,7 @@ namespace ServerWithKestrel21
 
         public virtual void OnHeader(Span<byte> name, Span<byte> value)
         {
-            
+
         }
 
         public virtual void OnStartLine(HttpMethod method, HttpVersion version, Span<byte> target, Span<byte> path, Span<byte> query, Span<byte> customMethod, bool pathEncoded)
@@ -53,6 +52,11 @@ namespace ServerWithKestrel21
             return Task.CompletedTask;
         }
 
+        public virtual Task OnReadCompletedAsync()
+        {
+            return Task.CompletedTask;
+        }
+
         public async Task ExecuteAsync()
         {
             while (true)
@@ -61,7 +65,15 @@ namespace ServerWithKestrel21
                 {
                     while (true)
                     {
-                        var result = await Connection.Transport.Input.ReadAsync();
+                        var task = Connection.Transport.Input.ReadAsync();
+
+                        if (!task.IsCompleted)
+                        {
+                            // No more data in the input
+                            await OnReadCompletedAsync();
+                        }
+
+                        var result = await task;
                         var buffer = result.Buffer;
                         var consumed = buffer.Start;
                         var examined = buffer.End;
