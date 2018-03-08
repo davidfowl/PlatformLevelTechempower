@@ -59,67 +59,65 @@ namespace ServerWithKestrel21
 
         public async Task ExecuteAsync()
         {
-            while (true)
+            try
             {
-                try
+                while (true)
                 {
-                    while (true)
+                    var task = Connection.Transport.Input.ReadAsync();
+
+                    if (!task.IsCompleted)
                     {
-                        var task = Connection.Transport.Input.ReadAsync();
-
-                        if (!task.IsCompleted)
-                        {
-                            // No more data in the input
-                            await OnReadCompletedAsync();
-                        }
-
-                        var result = await task;
-                        var buffer = result.Buffer;
-                        var consumed = buffer.Start;
-                        var examined = buffer.End;
-
-                        try
-                        {
-                            if (!buffer.IsEmpty)
-                            {
-                                ParseHttpRequest(buffer, out consumed, out examined);
-
-                                if (_state == State.Body)
-                                {
-                                    await ProcessRequestAsync();
-
-                                    // After processing the request, change the state to start line
-                                    // This means the application is responsible for handling body since we assume by the time this returns
-                                    // that the application has processed the entire request
-
-                                    _state = State.StartLine;
-                                }
-                                else if (result.IsCompleted)
-                                {
-                                    throw new InvalidOperationException("Unexpected end of data!");
-                                }
-                            }
-                            else if (result.IsCompleted)
-                            {
-                                break;
-                            }
-                        }
-                        finally
-                        {
-                            Connection.Transport.Input.AdvanceTo(consumed, examined);
-                        }
+                        // No more data in the input
+                        await OnReadCompletedAsync();
                     }
 
-                    Connection.Transport.Input.Complete();
+                    var result = await task;
+                    var buffer = result.Buffer;
+                    var consumed = buffer.Start;
+                    var examined = buffer.End;
+
+                    try
+                    {
+                        if (!buffer.IsEmpty)
+                        {
+                            ParseHttpRequest(buffer, out consumed, out examined);
+
+                            if (_state != State.Body && result.IsCompleted)
+                            {
+                                throw new InvalidOperationException("Unexpected end of data!");
+                            }
+                        }
+                        else if (result.IsCompleted)
+                        {
+                            break;
+                        }
+                    }
+                    finally
+                    {
+                        Connection.Transport.Input.AdvanceTo(consumed, examined);
+                    }
+
+                    if (_state == State.Body)
+                    {
+                        await ProcessRequestAsync();
+
+                        // After processing the request, change the state to start line
+                        // This means the application is responsible for handling body since we assume by the time this returns
+                        // that the application has processed the entire request
+
+                        _state = State.StartLine;
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Connection.Transport.Input.Complete(ex);
-                }
-                finally
-                {
-                    Connection.Transport.Output.Complete();
-                }
+
+                Connection.Transport.Input.Complete();
+            }
+            catch (Exception ex)
+            {
+                Connection.Transport.Input.Complete(ex);
+            }
+            finally
+            {
+                Connection.Transport.Output.Complete();
             }
         }
 

@@ -15,9 +15,16 @@ namespace ServerWithKestrel21
             WebHost.CreateDefaultBuilder(args)
                 .UseKestrel(options =>
                 {
+                    options.Listen(IPAddress.Loopback, 5000);
+
                     options.Listen(IPAddress.Loopback, 8080, builder =>
                     {
                         builder.UseHttpApplication<PlainTextConnection>();
+                    });
+
+                    options.Listen(IPAddress.Loopback, 8087, builder =>
+                    {
+                        builder.UseHttpApplication<WebSocketConnection>();
                     });
                 })
                 .UseStartup<Startup>()

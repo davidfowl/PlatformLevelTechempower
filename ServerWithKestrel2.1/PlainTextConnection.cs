@@ -11,11 +11,9 @@ namespace ServerWithKestrel21
         private static AsciiString _crlf = "\r\n";
         private static AsciiString _http11OK = "HTTP/1.1 200 OK\r\n";
         private static AsciiString _headerServer = "Server: Custom";
-        private static AsciiString _headerDate = "Date: ";
         private static AsciiString _headerContentLength = "Content-Length: ";
         private static AsciiString _headerContentLengthZero = "Content-Length: 0";
         private static AsciiString _headerContentTypeText = "Content-Type: text/plain";
-        private static AsciiString _headerContentTypeJson = "Content-Type: application/json";
 
         private static readonly DateHeaderValueManager _dateHeaderValueManager = new DateHeaderValueManager();
 

@@ -12,6 +12,8 @@ namespace ServerWithKestrel21
 
         public int Length => _data.Length;
 
+        public ReadOnlySpan<byte> AsSpan() => _data;
+
         public static implicit operator ReadOnlySpan<byte>(AsciiString str) => str._data;
         public static implicit operator byte[] (AsciiString str) => str._data;
 
