@@ -3,13 +3,13 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RuntimeFrameworkVersion>2.1.0-preview2-26225-03</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>2.1.0-preview2-26308-01</RuntimeFrameworkVersion>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.0-preview2-30220" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.1.0-preview2-30220" />
-    <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="2.1.0-preview2-30220" />
-    <PackageReference Include="Microsoft.Extensions.Buffers.Sources" Version="2.1.0-preview2-30220" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.0-preview2-30277" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.1.0-preview2-30277" />
+    <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="2.1.0-preview2-30277" />
+    <PackageReference Include="Microsoft.Extensions.Buffers.Sources" Version="2.1.0-preview2-30277" PrivateAssets="All" />
   </ItemGroup>
 </Project>

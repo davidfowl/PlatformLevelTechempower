@@ -48,20 +48,10 @@ namespace ServerWithKestrel21
         public override void Write(byte[] buffer, int offset, int count)
         {
         }
-
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
-        }
-
-        public override async Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {
             await _transport.Output.WriteAsync(source, cancellationToken);
-        }
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
