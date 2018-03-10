@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Text;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net.WebSockets;
@@ -50,12 +51,20 @@ namespace ServerWithKestrel21
                 Span<byte> mergedBytes = stackalloc byte[value.Length + _randomKey.Length];
                 value.CopyTo(mergedBytes);
                 _randomKey.AsSpan().CopyTo(mergedBytes.Slice(value.Length));
-                // Compute the sha1, base64 encode in place, we need 28 bytes
-                var target = new byte[28];
+                // Compute the sha1, base64 encode in place, we need 28 bytes.
+                // We make it 30 so we can add the \r\n for the header
+                var target = new byte[30];
                 _sha1.TryComputeHash(mergedBytes, target, out int written);
                 var status = Base64.EncodeToUtf8InPlace(target, written, out written);
 
-                _secWebSocketAcceptValue = new ReadOnlyMemory<byte>(target, 0, written);
+                Debug.Assert(status == OperationStatus.Done);
+                Debug.Assert(written == 28);
+
+                // Copy the crlf
+                Buffer.BlockCopy(_crlf, 0, target, written, 2);
+
+                _secWebSocketAcceptValue = new ReadOnlyMemory<byte>(target);
+
             }
         }
 
@@ -96,7 +105,6 @@ namespace ServerWithKestrel21
             // Sec-WebSocket-Key
             writer.Write(_secWebSocketAccept);
             writer.Write(_secWebSocketAcceptValue.Span);
-            writer.Write(_crlf);
 
             // Clear the header
             _secWebSocketAcceptValue = ReadOnlyMemory<byte>.Empty;
