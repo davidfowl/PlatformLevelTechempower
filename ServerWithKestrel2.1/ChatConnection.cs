@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
@@ -10,26 +12,38 @@ namespace ServerWithKestrel21
     {
         protected override async Task ProcessAsync(WebSocket websocket)
         {
-            Memory<byte> buffer = new byte[4096];
-
             while (true)
             {
-                var result = await websocket.ReceiveAsync(buffer, default);
+                // Bufferless async wait (well it's like 14 bytes)
+                var result = await websocket.ReceiveAsync(Memory<byte>.Empty, default);
 
-                switch (result.MessageType)
+                // If we got a close then send the close frame back
+                if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    case WebSocketMessageType.Close:
-                        await websocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", default);
-                        return;
-                    case WebSocketMessageType.Binary:
-                    case WebSocketMessageType.Text:
-                        await websocket.SendAsync(buffer.Slice(0, result.Count), result.MessageType, result.EndOfMessage, default);
-                        break;
-                    default:
-                        break;
+                    await websocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", default);
+                    return;
+                }
+                else
+                {
+                    // Rent 4K
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+                    try
+                    {
+                        var memory = buffer.AsMemory();
+                        // This should always be synchronous
+                        var task = websocket.ReceiveAsync(memory, default);
+
+                        Debug.Assert(task.IsCompleted);
+
+                        result = task.GetAwaiter().GetResult();
+                        await websocket.SendAsync(memory.Slice(0, result.Count), result.MessageType, result.EndOfMessage, default);
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
                 }
             }
         }
-
     }
 }

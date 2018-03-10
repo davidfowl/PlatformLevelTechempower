@@ -74,7 +74,7 @@ namespace ServerWithKestrel21
 
             await Connection.Transport.Output.FlushAsync();
 
-            using (var ws = WebSocketProtocol.CreateFromStream(new DuplexStream(Connection.Transport), isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromMinutes(2)))
+            using (var ws = WebSocketProtocol.CreateFromStream(new DuplexStream(Connection.Transport), isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromMinutes(2), new byte[14]))
             {
                 await ProcessAsync(ws);
             }
